@@ -1,0 +1,51 @@
+# This is my travis template for android java application and library
+# builds. If you copy it, give credit where credit is due. Thanks
+# Fred Grott(GrottWorkShop) Copyright(C) 2015 Apache License
+# http://docs.travis-ci.com/user/languages/android/
+language: android
+
+# do we need this?
+# sudo: false
+android:
+    components:
+       - platform-tools-23.0.1
+       - build-tools-23.0.1
+       - tools-24.4
+       # sdk version to compile project with
+       - android-23
+       # extras
+       - extra-google-m2repository-22.0.0
+       - extra-android-m2repository-22.0.0
+       - extra-android-support-23.0.1
+       # addons
+       - addon-google_apis-google-23
+       - addon-google_apis-google-22
+       - addon-google_apis-google-21
+       - addon-google_apis-google-19
+       - addon-google_apis-google-18
+       - addon-google_apis-google-17
+       - addon-google_apis-google-16
+       # system images
+       - sys-img-armeabi-v7a-android-16
+       - sys-img-armeabi-v7a-android-17
+       - sys-img-armeabi-v7a-android-18
+       - sys-img-android-v7a-android-19
+       - sys-img-android-v7a-android-21
+       - sys-img-android-v7a-android-22
+       - sys-img-android-v7a-android-23
+
+
+
+os:
+  - linux
+  - osx
+  - windows
+
+# Emulator Management: Create, Start and Wait
+# need to know how to run multiple avd emulator using travis
+# so that we tests run on the min ot maxc matrix of android apis
+before_script:
+  - echo no | android create avd --force -n test -t android-19 --abi armeabi-v7a
+  - emulator -avd test -no-skin -no-audio -no-window &
+  - android-wait-for-emulator
+  - adb shell input keyevent 82 &
