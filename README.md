@@ -23,6 +23,111 @@ Than in the module buildscript:
 compile 'com.github.shareme:GWSBindroid:{latest-release-number}@aar'
 ```
 
+
+A simple ViewModel might look like this:
+
+```java
+public class FooModel {
+  // An int property named "Bar"
+  private TrackableInt bar = new TrackableInt(0);
+  public int getBar() {
+    return bar.get();
+  }
+  public void setBar(int value) {
+    bar.set(value);
+  }
+
+  // A String property named "Baz"
+  private TrackableField<String> baz = new TrackableField<String>();
+  public String getBaz() {
+    return baz.get();
+  }
+  public void setBaz(String value) {
+    baz.set(value);
+  }
+}
+```
+In your `Activity`'s `OnCreate()` override or `View`'s constructor, call `bind()` for each pair of properties you wish to track each other:
+
+```java
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+  super.onCreate(savedInstanceState);
+  setContentView(R.layout.activity_main);
+
+  ViewModel model = new ViewModel();
+
+  UiBinder.bind(new EditTextTextProperty((EditText) this.findViewById(R.id.TextField)), model,
+      "StringValue", BindingMode.TWO_WAY);
+  UiBinder.bind(this, R.id.TextView, "Text", model, "StringValue", BindingMode.ONE_WAY);
+}
+```
+Sometimes, the values on your model will not map directly to the types of values that the views in your UI expect.  For example, you may have an `int` property on your model that will be displayed as a `String` in a `TextView`.  Bindroid solves this problem using converters, which can be passed to a `Binding` or to `UiBinder.bind()`:
+
+```java
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+  super.onCreate(savedInstanceState);
+  setContentView(R.layout.activity_main);
+
+  ViewModel model = new ViewModel();
+
+  UiBinder.bind(new EditTextTextProperty((EditText) this.findViewById(R.id.TextField)), model,
+      "StringValue", BindingMode.TWO_WAY);
+  UiBinder.bind(this, R.id.TextView, "Text", model, "StringValue", BindingMode.ONE_WAY);
+  UiBinder.bind(this, R.id.ListView, "Adapter", model, "Dates", BindingMode.ONE_WAY,
+      new AdapterConverter(DateView.class));
+
+  UiBinder.bind(this, R.id.CountTextView, "Text", model, "Count", BindingMode.ONE_WAY,
+      new ToStringConverter("Count: %d"));
+  UiBinder.bind(this, R.id.TextLengthView, "Text", model, "TextLength", BindingMode.ONE_WAY,
+      new ToStringConverter("Text length: %d"));
+  UiBinder.bind(this, R.id.SumView, "Text", model, "CountPlusTextLength", BindingMode.ONE_WAY,
+      new ToStringConverter("Sum: %d"));
+  UiBinder.bind(this, R.id.EvenSpinner, "Visibility", model, "CountIsEven", BindingMode.ONE_WAY,
+      new BoolConverter());
+  UiBinder.bind(this, R.id.OddSpinner, "Visibility", model, "CountIsEven", BindingMode.ONE_WAY,
+      new BoolConverter(true));
+}
+```
+You may have existing classes that you want to expose as trackable objects that can be bound to using Bindroid.  This process requires a little instrumentation, but is relatively straightforward.  To set up your objects for trackability, you will use the `Trackable` class.  Any time an accessor to your object is called, you must call `trackable.track()`.  Whenever the value of the thing being accessed changes, you must call `trackable.notifyTrackers()`.  Once you've done that, these values can easily be bound using Bindroid.
+
+For example, let's suppose we have an existing model object (`Foo`) using a legacy change notification mechanism.  Your ViewModel that wraps this model would then look like this:
+
+```java
+public class FooViewModel {
+  private FooModel model;
+  private Trackable trackable = new Trackable();
+  public FooViewModel(FooModel model) {
+    this.model = model;
+    model.addChangeListener(new ChangeListener() {
+      public void propertyChanged() {
+        trackable.notifyTrackers();
+      }
+    });
+  }
+
+  // Each wrapped property would need to call track()
+  public String getBar() {
+    trackable.track();
+    return model.getBar();
+  }
+  public void setBar(String value) {
+    model.setBar(value);
+  }
+
+  // Alternatively, you can directly expose the model, but call track()
+  // on the way in so that any listeners will know to listen for change
+  // notifications
+  public FooModel getFoo() {
+    trackable.track();
+    return model;
+  }
+}
+```
+
+
+
 Target Android API Range
 ========================
 

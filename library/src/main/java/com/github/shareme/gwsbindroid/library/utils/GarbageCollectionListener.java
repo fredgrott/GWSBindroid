@@ -1,0 +1,65 @@
+package com.github.shareme.gwsbindroid.library.utils;
+
+import java.lang.ref.WeakReference;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Allows the Garbage Collector to be watched by creating a weak reference to a sentinel object and
+ * waiting for its finalizer to run. Useful for verifying that objects are being garbage-collected.
+ */
+@SuppressWarnings("unused")
+public final class GarbageCollectionListener {
+  private static List<Action<Void>> listeners;
+
+  static {
+    GarbageCollectionListener.listeners = new LinkedList<>();
+      new WeakReference<>(new GarbageCollectionListener());
+  }
+
+  /**
+   * Adds a listener for garbage collections.
+   *
+   * @param action the method to call whenever a garbage collection is detected.
+   */
+  @SuppressWarnings("SynchronizeOnNonFinalField")
+  public static synchronized void addListener(Action<Void> action) {
+    synchronized (listeners) {
+      GarbageCollectionListener.listeners.add(action);
+    }
+  }
+
+  @SuppressWarnings("SynchronizeOnNonFinalField")
+  private static synchronized void notifyListeners() {
+    synchronized (listeners) {
+      for (Action<Void> l : new LinkedList<>(GarbageCollectionListener.listeners)) {
+        try {
+          l.invoke(null);
+        } catch (Exception e) {
+        }
+      }
+        new WeakReference<>(new GarbageCollectionListener());
+    }
+  }
+
+  /**
+   * Removes a listener for garbage collections.
+   *
+   * @param action the action to remove.
+   */
+  @SuppressWarnings("SynchronizeOnNonFinalField")
+  public static synchronized void removeListener(Action<Void> action) {
+    synchronized (listeners) {
+      GarbageCollectionListener.listeners.remove(action);
+    }
+  }
+
+  private GarbageCollectionListener() {
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    GarbageCollectionListener.notifyListeners();
+    super.finalize();
+  }
+}
