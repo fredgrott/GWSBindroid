@@ -5,7 +5,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 
 
 def libVersionCode = 1
-def libVersionName = "1.0.0.0"
+def libVersionName = "1.0.0.1"
 
 //okay rest of the jitpack stuff for the local maven install to work correctly
 // uncomment next lines and change where appropriate
